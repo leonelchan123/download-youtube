@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>YouTube Downloader Sofi</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        #videoForm {
+            margin-bottom: 20px;
+        }
+        input[type="text"] {
+            width: 70%;
+            padding: 8px;
+        }
+        button {
+            padding: 8px 15px;
+            background: #ff0000;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        #videoInfo {
+            margin-top: 20px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            display: none;
+        }
+        #downloadBtn {
+            margin-top: 15px;
+            display: none;
+        }
+        .error {
+            color: red;
+        }
+    </style>
+</head>
+<body>
+    <h1>YouTube Downloader</h1>
+    <p>Ingresa la URL de un video de YouTube para descargarlo:</p>
+    
+    <div id="videoForm">
+        <input type="text" id="videoUrl" placeholder="https://www.youtube.com/watch?v=..." />
+        <button onclick="searchVideo()">Buscar</button>
+    </div>
+    
+    <div id="videoInfo"></div>
+    <button id="downloadBtn" onclick="downloadVideo()">Descargar Video</button>
+    
+    <script>
+        async function searchVideo() {
+            const url = document.getElementById('videoUrl').value;
+            if (!url) {
+                alert('Por favor ingresa una URL válida');
+                return;
+            }
+            
+            document.getElementById('videoInfo').innerHTML = 'Buscando información del video...';
+            document.getElementById('videoInfo').style.display = 'block';
+            document.getElementById('downloadBtn').style.display = 'none';
+            
+            try {
+                const response = await fetch(`/api/search?url=${encodeURIComponent(url)}`);
+                const data = await response.json();
+                
+                if (response.ok) {
+                    document.getElementById('videoInfo').innerHTML = `
+                        <h3>${data.title}</h3>
+                        <p>Duración: ${formatDuration(data.duration)}</p>
+                        <p>Canal: ${data.uploader}</p>
+                        <img src="${data.thumbnail}" alt="Miniatura del video" style="max-width: 320px" />
+                    `;
+                    document.getElementById('downloadBtn').style.display = 'block';
+                } else {
+                    document.getElementById('videoInfo').innerHTML = `<p class="error">Error: ${data.error}</p>`;
+                }
+            } catch (error) {
+                document.getElementById('videoInfo').innerHTML = `<p class="error">Error: ${error.message}</p>`;
+            }
+        }
+        
+        async function downloadVideo() {
+            const url = document.getElementById('videoUrl').value;
+            
+            try {
+                const response = await fetch(`/api/download?url=${encodeURIComponent(url)}`);
+                const data = await response.json();
+                
+                if (response.ok) {
+                    // Abre la URL directa del video en una nueva pestaña
+                    window.open(data.direct_url, '_blank');
+                } else {
+                    alert(`Error: ${data.error}`);
+                }
+            } catch (error) {
+                alert(`Error: ${error.message}`);
+            }
+        }
+        
+        function formatDuration(seconds) {
+            const hrs = Math.floor(seconds / 3600);
+            const mins = Math.floor((seconds % 3600) / 60);
+            const secs = seconds % 60;
+            
+            return `${hrs > 0 ? hrs + 'h ' : ''}${mins > 0 ? mins + 'm ' : ''}${secs}s`;
+        }
+    </script>
+</body>
+</html>
